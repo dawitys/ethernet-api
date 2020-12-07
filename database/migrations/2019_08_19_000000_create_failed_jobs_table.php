@@ -10,7 +10,6 @@ class CreateFailedJobsTable extends Migration
      * Run the migrations.
      *
      * @return void
-            $table->timestamp('created_at')->nullable();
      */
     public function up()
     {

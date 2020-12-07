@@ -1,13 +1,11 @@
 <?php
+
 namespace App\Http\Controllers;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use App\Models\User;
-use App\Notifications\SignupActivate;
-
-use Laravolt\Avatar\Facade as Avatar;
-use Storage;
 
 class AuthController extends Controller
 {
@@ -30,32 +28,14 @@ class AuthController extends Controller
         $user = new User([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => bcrypt($request->password),
-            'activation_token' => md5(time())
+            'password' => bcrypt($request->password)
         ]);
         $user->save();
-        $avatar = Avatar::create($user->name)->getImageObject()->encode('png');
-        Storage::put('avatars/'.$user->id.'/avatar.png', (string) $avatar);
-        
-        $user->notify(new SignupActivate($user));
         return response()->json([
             'message' => 'Successfully created user!'
         ], 201);
     }
-  
-    public function signupActivate($token)
-    {
-        $user = User::where('activation_token', $token)->first();
-        if (!$user) {
-            return response()->json([
-                'message' => 'This activation token is invalid.'
-            ], 404);
-        }
-        $user->active = true;
-        $user->activation_token = '';
-        $user->save();
-        return $user;
-    }
+
     /**
      * Login user and create token
      *
@@ -69,13 +49,11 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|string|email',
-            'password' => 'required|string',
+            'body.email' => 'required|string|email',
+            'body.password' => 'required|string',
             'remember_me' => 'boolean'
         ]);
-        $credentials = request(['email', 'password']);
-        $credentials['active'] = 1;
-        $credentials['deleted_at'] = null;
+        $credentials = [ 'email' => $request->body['email'],'password' => $request->body['password'] ];
         if(!Auth::attempt($credentials))
             return response()->json([
                 'message' => 'Unauthorized'
@@ -87,14 +65,18 @@ class AuthController extends Controller
             $token->expires_at = Carbon::now()->addWeeks(1);
         $token->save();
         return response()->json([
-            'access_token' => $tokenResult->accessToken,
-            'token_type' => 'Bearer',
-            'expires_at' => Carbon::parse(
-                $tokenResult->token->expires_at
-            )->toDateTimeString()
+            'success' => true,
+            'data'      => [
+                'username'      => $user->username,
+                'token' => $tokenResult->accessToken,
+                'token_type' => 'Bearer',
+                'expires_at' => Carbon::parse(
+                    $tokenResult->token->expires_at
+                )->toDateTimeString()
+            ]
         ]);
     }
-  
+
     /**
      * Logout user (Revoke the token)
      *
@@ -107,7 +89,7 @@ class AuthController extends Controller
             'message' => 'Successfully logged out'
         ]);
     }
-  
+
     /**
      * Get the authenticated User
      *

@@ -14,16 +14,14 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
-    return $request->user();
-});
+
 
 Route::group([
     'prefix' => 'auth'
 ], function () {
     Route::post('login', 'AuthController@login');
     Route::post('signup', 'AuthController@signup');
-  
+
     Route::group([
       'middleware' => 'auth:api'
     ], function() {
@@ -32,27 +30,33 @@ Route::group([
     });
 });
 
-Route::group([
-    'prefix' => 'auth'
-], function () {
-    Route::post('login', 'AuthController@login');
-    Route::post('signup', 'AuthController@signup');
-    Route::get('signup/activate/{token}', 'AuthController@signupActivate');
-  
-    Route::group([
-      'middleware' => 'auth:api'
-    ], function() {
-        Route::get('logout', 'AuthController@logout');
-        Route::get('user', 'AuthController@user');
-    });
-});
+Route::get('pages/find', 'PageController@find');
 
-Route::group([    
-    'namespace' => 'Auth',    
-    'middleware' => 'api',    
-    'prefix' => 'password'
-], function () {    
-    Route::post('create', 'PasswordResetController@create');
-    Route::get('find/{token}', 'PasswordResetController@find');
-    Route::post('reset', 'PasswordResetController@reset');
+Route::group(['middleware' => 'auth:api'], function(){
+
+    Route::get('/test', function () {
+        return 'middleware passed';
+    });
+
+    Route::resource('blocks', 'PostController', [
+        'except'    => ['create', 'edit']
+    ]);
+
+    Route::resource('pages', 'PageController', [
+        'except'    => ['create', 'edit']
+    ]);
+
+    Route::resource('media', 'ImageController', [
+        'except'    => ['create', 'edit']
+    ]);
+
+    Route::resource('users', 'UserController', [
+        'except'    => ['create', 'edit', 'update']
+    ]);
+
+    Route::get('header', 'HeaderItemController@index');
+    Route::get('footer', 'FooterController@show');
+    Route::put('footer', 'FooterController@update');
+
+    Route::post('header', 'HeaderItemController@sync');
 });
